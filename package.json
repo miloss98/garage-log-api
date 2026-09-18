@@ -27,5 +27,15 @@
     "prisma": "^8.0.0-rc.15",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
   }
 }
