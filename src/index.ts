@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 8000
 
 app.use(express.json())
 
-app.get('/health', (_req, res) => {
+app.get('/', (_req, res) => {
   res.json({ status: 'ok', message: 'Server is running!' })
 })
 

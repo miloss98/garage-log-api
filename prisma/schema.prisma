@@ -10,8 +10,60 @@ datasource db {
 model User {
   id         String   @id @default(uuid())
   email      String   @unique
+  password   String   
   full_name  String?
+  avatar_url String?
   created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  cars       Car[]
 
   @@map("users")
+}
+
+model Car {
+  id              String @id @default(uuid())
+  user_id          String  
+  user            User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  service_records ServiceRecord[]
+  name            String 
+  model           String?
+  year            Int
+  color           String?
+  licence_plate   String?
+  mileage         Int?
+  fuel_type       FuelType @default(PETROL)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("cars")
+}
+
+enum FuelType {
+  PETROL @map("petrol")
+  DIESEL @map("diesel")
+  HYBRID @map("hybrid")
+  ELECTRIC @map("electric")
+}
+
+model ServiceRecord {
+  id                  String @id @default(uuid())
+  car_id               String
+  car                 Car @relation(fields: [car_id], references: [id], onDelete: Cascade)
+  type                SRType 
+  service_date        DateTime
+  next_service_date   DateTime?
+  mileage_at_service  Int?
+  notes               String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@map("service_records")
+}
+
+enum SRType {
+  OIL_CHANGE @map("oil_change")
+  SMALL_SERVICE @map("small_service")
+  BIG_SERVICE @map("big_service")
+  TIRE_CHANGE @map("tire_change")
+  REGISTRATION @map("registration")
 }
