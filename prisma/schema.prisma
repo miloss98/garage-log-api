@@ -30,6 +30,7 @@ model Car {
   licence_plate   String?
   mileage         Int?
   fuel_type       FuelType        @default(PETROL)
+  image_url       String?
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
   user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
