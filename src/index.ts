@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 
 import authRouter from './modules/auth/auth.router'
+import uploadsRouter from './modules/uploads/uploads.router'
 import carsRouter from './modules/cars/cars.router'
 import serviceRecordsRouter from './modules/service_records/service-records.router'
 import { authenticate } from './middleware/auth.middleware'
@@ -17,6 +18,7 @@ app.use(express.json())
 app.use(cookieParser())
 
 app.use('/api/auth', authRouter)
+app.use('/api/uploads', authenticate, uploadsRouter)
 app.use('/api/cars', authenticate, carsRouter)
 app.use('/api/cars/:carId/service-records', authenticate, serviceRecordsRouter)
 

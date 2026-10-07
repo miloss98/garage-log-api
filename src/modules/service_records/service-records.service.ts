@@ -10,6 +10,7 @@ export const getServiceRecords = async (userId: string, carId: string) => {
         user_id: userId,
       },
     },
+    orderBy: { service_date: 'desc' },
   })
   return serviceRecords
 }

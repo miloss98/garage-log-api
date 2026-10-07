@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
-import { registerSchema, loginSchema } from './auth.schema'
+import { registerSchema, loginSchema, updateMeSchema } from './auth.schema'
 import { register, login } from './auth.service'
 import { AuthRequest } from '../../middleware/auth.middleware'
 import { db } from '../../lib/db'
@@ -75,6 +75,21 @@ export const meController = async (req: AuthRequest, res: Response) => {
       return
     }
 
+    const { password: _, ...userWithoutPassword } = user
+    res.status(200).json(userWithoutPassword)
+  } catch (error: any) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+export const updateMeController = async (req: AuthRequest, res: Response) => {
+  const parsed = updateMeSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ errors: parsed.error.flatten() })
+    return
+  }
+  try {
+    const user = await db.user.update({ where: { id: req.userId }, data: parsed.data })
     const { password: _, ...userWithoutPassword } = user
     res.status(200).json(userWithoutPassword)
   } catch (error: any) {

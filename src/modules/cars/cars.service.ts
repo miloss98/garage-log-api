@@ -4,9 +4,9 @@ import { CarInput } from './cars.schema'
 //get all cars
 export const getCars = async (userId: string) => {
   const cars = await db.car.findMany({
-    where: {
-      user_id: userId,
-    },
+    where: { user_id: userId },
+    include: { service_records: true },
+    orderBy: { created_at: 'desc' },
   })
   return cars
 }

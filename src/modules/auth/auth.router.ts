@@ -4,6 +4,7 @@ import {
   logoutController,
   meController,
   registerController,
+  updateMeController,
 } from './auth.controller'
 import { authenticate } from '../../middleware/auth.middleware'
 
@@ -16,9 +17,12 @@ router.post('/register', registerController)
 router.post('/login', loginController)
 
 //logout
-router.post('/logout', authenticate, logoutController)
+router.post('/logout', logoutController)
 
 //me
 router.get('/me', authenticate, meController)
+
+//update me
+router.patch('/me', authenticate, updateMeController)
 
 export default router
