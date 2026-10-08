@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { Currency } from '../../generated/prisma/enums'
 
 export const registerSchema = z.object({
   email: z.email(),
@@ -11,7 +12,12 @@ export const loginSchema = z.object({
   password: z.string().min(6),
 })
 
-export const updateMeSchema = z.object({ full_name: z.string().min(2) })
+// Whitelist of what a user may change about themselves; both fields optional
+// so the client can update just one of them
+export const updateMeSchema = z.object({
+  full_name: z.string().trim().min(2).optional(),
+  currency: z.enum(Currency).optional(),
+})
 
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>

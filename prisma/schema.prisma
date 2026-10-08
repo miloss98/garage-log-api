@@ -14,6 +14,7 @@ model User {
   created_at DateTime @default(now())
   avatar_url String?
   password   String
+  currency   Currency @default(EUR)
   updated_at DateTime @updatedAt
   cars       Car[]
 
@@ -36,21 +37,30 @@ model Car {
   user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
   service_records ServiceRecord[]
 
+  @@index([user_id])
   @@map("cars")
 }
 
 model ServiceRecord {
-  id                 String    @id @default(uuid())
-  car_id             String
-  type               SRType
-  service_date       DateTime
-  next_service_date  DateTime?
-  mileage_at_service Int?
-  notes              String?
-  created_at         DateTime  @default(now())
-  updated_at         DateTime  @updatedAt
-  car                Car       @relation(fields: [car_id], references: [id], onDelete: Cascade)
+  id                   String    @id @default(uuid())
+  car_id               String
+  type                 SRType
+  // What was done, e.g. "Rust repair - rear arch". Required for REPAIR and OTHER.
+  title                String?
+  service_date         DateTime
+  mileage_at_service   Int?
+  // Reminder: due on this date or at this mileage, whichever comes first
+  next_service_date    DateTime?
+  next_service_mileage Int?
+  // Money as Decimal (exact), never Float: 0.1 + 0.2 must equal 0.3
+  cost                 Decimal?  @db.Decimal(10, 2)
+  workshop             String?
+  notes                String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+  car                  Car       @relation(fields: [car_id], references: [id], onDelete: Cascade)
 
+  @@index([car_id])
   @@map("service_records")
 }
 
@@ -62,9 +72,26 @@ enum FuelType {
 }
 
 enum SRType {
+  // Maintenance
   OIL_CHANGE    @map("oil_change")
   SMALL_SERVICE @map("small_service")
   BIG_SERVICE   @map("big_service")
   TIRE_CHANGE   @map("tire_change")
+  BRAKES        @map("brakes")
+  BATTERY       @map("battery")
+  // Repairs
+  REPAIR        @map("repair")
+  // Documents
   REGISTRATION  @map("registration")
+  INSPECTION    @map("inspection")
+  INSURANCE     @map("insurance")
+  OTHER         @map("other")
+}
+
+enum Currency {
+  EUR
+  USD
+  GBP
+  CHF
+  RSD
 }

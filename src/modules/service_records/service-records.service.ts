@@ -3,6 +3,20 @@ import { notFound } from '../../lib/http-error'
 import { getCarById } from '../cars/cars.service'
 import { ServiceRecordInput } from './service-records.schema'
 
+type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0]
+
+// Logging a service at 152,000 km means the car has at least 152,000 km.
+// One conditional UPDATE: only raises the mileage, never lowers it
+// (entering old history won't roll the odometer back).
+const raiseCarMileage = (tx: Tx, carId: string, mileage: number | null | undefined) => {
+  if (mileage == null) return
+
+  return tx.car.updateMany({
+    where: { id: carId, OR: [{ mileage: null }, { mileage: { lt: mileage } }] },
+    data: { mileage },
+  })
+}
+
 //get all service records of a car
 export const getServiceRecords = async (userId: string, carId: string) => {
   // 404 if the car doesn't exist or belongs to someone else
@@ -23,13 +37,17 @@ export const addServiceRecord = async (
 ) => {
   await getCarById(userId, carId)
 
-  const newServiceRecord = await db.serviceRecord.create({
-    data: {
-      ...serviceData,
-      car_id: carId,
-    },
+  // Transaction: the record and the mileage update succeed or fail together
+  return db.$transaction(async (tx) => {
+    const newServiceRecord = await tx.serviceRecord.create({
+      data: {
+        ...serviceData,
+        car_id: carId,
+      },
+    })
+    await raiseCarMileage(tx, carId, serviceData.mileage_at_service)
+    return newServiceRecord
   })
-  return newServiceRecord
 }
 
 //get single service record
@@ -55,11 +73,14 @@ export const updateServiceRecord = async (
 ) => {
   await getServiceRecordById(userId, carId, serviceId)
 
-  const updatedServiceRecord = await db.serviceRecord.update({
-    where: { id: serviceId },
-    data: { ...serviceData },
+  return db.$transaction(async (tx) => {
+    const updatedServiceRecord = await tx.serviceRecord.update({
+      where: { id: serviceId },
+      data: { ...serviceData },
+    })
+    await raiseCarMileage(tx, carId, serviceData.mileage_at_service)
+    return updatedServiceRecord
   })
-  return updatedServiceRecord
 }
 
 //delete service record

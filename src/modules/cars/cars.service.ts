@@ -6,7 +6,8 @@ import { CarInput } from './cars.schema'
 export const getCars = async (userId: string) => {
   const cars = await db.car.findMany({
     where: { user_id: userId },
-    include: { service_records: true },
+    // Newest records first: the frontend picks the latest record per type
+    include: { service_records: { orderBy: { service_date: 'desc' } } },
     orderBy: { created_at: 'desc' },
   })
   return cars
