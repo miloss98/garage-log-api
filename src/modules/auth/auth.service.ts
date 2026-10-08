@@ -4,7 +4,7 @@ import { HttpError, notFound } from '../../lib/http-error'
 import { LoginInput, RegisterInput, UpdateMeInput } from './auth.schema'
 
 // Never send the password hash to the client
-const withoutPassword = <T extends { password: string }>(user: T) => {
+export const withoutPassword = <T extends { password: string }>(user: T) => {
   const { password: _, ...rest } = user
   return rest
 }

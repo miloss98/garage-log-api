@@ -12,3 +12,14 @@ export const loginLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: 'Too many login attempts. Try again in 15 minutes.' },
 })
+
+// Every demo writes ~30 rows, so cap how many can start per hour in total
+// (one shared counter for all visitors: behind the proxy, IPs aren't reliable)
+export const demoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 50,
+  keyGenerator: () => 'all-visitors',
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { message: 'The demo is busy right now. Please try again later.' },
+})

@@ -2,18 +2,23 @@ import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { registerSchema, loginSchema, updateMeSchema } from './auth.schema'
 import { register, login, getMe, updateMe } from './auth.service'
-import { AuthRequest } from '../../middleware/auth.middleware'
+import { AuthRequest, TokenPayload } from '../../middleware/auth.middleware'
+import { createDemoUser, DEMO_TTL_MS } from '../demo/demo.service'
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
 
-const setAuthCookie = (res: Response, userId: string) => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '7d' })
+// Demo sessions end when the demo account is deleted (24h);
+// the token carries `demo: true` so routes can block demo users cheaply
+const setAuthCookie = (res: Response, userId: string, { demo = false } = {}) => {
+  const maxAge = demo ? DEMO_TTL_MS : SEVEN_DAYS
+  const payload: TokenPayload = demo ? { userId, demo } : { userId }
+  const token = jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: maxAge / 1000 })
 
   res.cookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: SEVEN_DAYS,
+    maxAge,
   })
 }
 
@@ -36,7 +41,15 @@ export const loginController = async (req: Request, res: Response) => {
   res.status(200).json({ user })
 }
 
-export const logoutController = (_req: Request, res: Response) => {
+// "Try the demo": a fresh, private, pre-filled account per visitor
+export const demoController = async (_req: Request, res: Response) => {
+  const user = await createDemoUser()
+
+  setAuthCookie(res, user.id, { demo: true })
+  res.status(201).json({ user })
+}
+
+export const logoutController =(_req: Request, res: Response) => {
   res.clearCookie('token').status(200).json({ message: 'Logged out successfully.' })
 }
 

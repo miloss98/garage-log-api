@@ -10,7 +10,7 @@ import uploadsRouter from './modules/uploads/uploads.router'
 import carsRouter from './modules/cars/cars.router'
 import serviceRecordsRouter from './modules/service_records/service-records.router'
 import statsRouter from './modules/stats/stats.router'
-import { authenticate } from './middleware/auth.middleware'
+import { authenticate, blockDemo } from './middleware/auth.middleware'
 import { errorHandler, notFoundHandler } from './middleware/error.middleware'
 
 dotenv.config()
@@ -31,7 +31,9 @@ app.get('/api/health', (_req, res) => {
 })
 
 app.use('/api/auth', authRouter)
-app.use('/api/uploads', authenticate, uploadsRouter)
+// Demo accounts can't upload photos: they're deleted after 24h, and their
+// files would be left behind in UploadThing storage
+app.use('/api/uploads', authenticate, blockDemo, uploadsRouter)
 app.use('/api/cars', authenticate, carsRouter)
 app.use('/api/cars/:carId/service-records', authenticate, serviceRecordsRouter)
 app.use('/api/stats', authenticate, statsRouter)

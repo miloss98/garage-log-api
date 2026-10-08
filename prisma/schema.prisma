@@ -15,9 +15,12 @@ model User {
   avatar_url String?
   password   String
   currency   Currency @default(EUR)
+  // Temporary "Try the demo" accounts, deleted after 24 hours
+  is_demo    Boolean  @default(false)
   updated_at DateTime @updatedAt
   cars       Car[]
 
+  @@index([is_demo, created_at])
   @@map("users")
 }
 

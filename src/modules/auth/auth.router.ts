@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  demoController,
   loginController,
   logoutController,
   meController,
@@ -7,7 +8,7 @@ import {
   updateMeController,
 } from './auth.controller'
 import { authenticate } from '../../middleware/auth.middleware'
-import { loginLimiter } from '../../middleware/rate-limit.middleware'
+import { demoLimiter, loginLimiter } from '../../middleware/rate-limit.middleware'
 
 const router = Router()
 
@@ -16,6 +17,9 @@ router.post('/register', registerController)
 
 //login
 router.post('/login', loginLimiter, loginController)
+
+//try the demo
+router.post('/demo', demoLimiter, demoController)
 
 //logout
 router.post('/logout', logoutController)
