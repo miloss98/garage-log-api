@@ -1,15 +1,15 @@
 import { db } from '../../lib/db'
+import { notFound } from '../../lib/http-error'
+import { getCarById } from '../cars/cars.service'
 import { ServiceRecordInput } from './service-records.schema'
 
-//get all cars
+//get all service records of a car
 export const getServiceRecords = async (userId: string, carId: string) => {
+  // 404 if the car doesn't exist or belongs to someone else
+  await getCarById(userId, carId)
+
   const serviceRecords = await db.serviceRecord.findMany({
-    where: {
-      car_id: carId,
-      car: {
-        user_id: userId,
-      },
-    },
+    where: { car_id: carId },
     orderBy: { service_date: 'desc' },
   })
   return serviceRecords
@@ -21,8 +21,7 @@ export const addServiceRecord = async (
   carId: string,
   serviceData: ServiceRecordInput,
 ) => {
-  const car = await db.car.findFirst({ where: { id: carId, user_id: userId } })
-  if (!car) throw new Error('Car not found')
+  await getCarById(userId, carId)
 
   const newServiceRecord = await db.serviceRecord.create({
     data: {
@@ -39,11 +38,11 @@ export const getServiceRecordById = async (userId: string, carId: string, servic
     where: {
       id: serviceId,
       car_id: carId,
-      car: {
-        user_id: userId,
-      },
+      car: { user_id: userId },
     },
   })
+
+  if (!serviceRecord) throw notFound('Service record')
   return serviceRecord
 }
 
@@ -54,37 +53,19 @@ export const updateServiceRecord = async (
   serviceId: string,
   serviceData: ServiceRecordInput,
 ) => {
-  const serviceRecord = await db.serviceRecord.findFirst({
-    where: {
-      id: serviceId,
-      car_id: carId,
-      car: { user_id: userId },
-    },
-  })
+  await getServiceRecordById(userId, carId, serviceId)
 
-  if (!serviceRecord) throw new Error('Service record not found')
-
-  const updateServiceRecord = await db.serviceRecord.update({
+  const updatedServiceRecord = await db.serviceRecord.update({
     where: { id: serviceId },
-    data: {
-      ...serviceData,
-    },
+    data: { ...serviceData },
   })
-  return updateServiceRecord
+  return updatedServiceRecord
 }
 
 //delete service record
 export const deleteServiceRecord = async (userId: string, carId: string, serviceId: string) => {
-  const deletedServiceRecord = await db.serviceRecord.findFirst({
-    where: {
-      id: serviceId,
-      car_id: carId,
-      car: { user_id: userId },
-    },
-  })
-
-  if (!deletedServiceRecord) throw new Error('Service record not found')
+  const serviceRecord = await getServiceRecordById(userId, carId, serviceId)
 
   await db.serviceRecord.delete({ where: { id: serviceId } })
-  return deletedServiceRecord
+  return serviceRecord
 }

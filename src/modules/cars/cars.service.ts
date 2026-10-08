@@ -1,4 +1,5 @@
 import { db } from '../../lib/db'
+import { notFound } from '../../lib/http-error'
 import { CarInput } from './cars.schema'
 
 //get all cars
@@ -22,7 +23,7 @@ export const addCar = async (data: CarInput, userId: string) => {
   return newCar
 }
 
-//get single car
+//get single car (also used to check ownership before update/delete)
 export const getCarById = async (userId: string, carId: string) => {
   const car = await db.car.findFirst({
     where: {
@@ -30,24 +31,18 @@ export const getCarById = async (userId: string, carId: string) => {
       user_id: userId,
     },
   })
+
+  if (!car) throw notFound('Car')
   return car
 }
 
 //update car
 export const updateCar = async (userId: string, carId: string, carData: CarInput) => {
-  const car = await db.car.findFirst({
-    where: { id: carId, user_id: userId },
-  })
-
-  if (!car) throw new Error('Car not found')
+  await getCarById(userId, carId)
 
   const updatedCar = await db.car.update({
-    where: {
-      id: carId,
-    },
-    data: {
-      ...carData,
-    },
+    where: { id: carId },
+    data: { ...carData },
   })
 
   return updatedCar
@@ -55,15 +50,9 @@ export const updateCar = async (userId: string, carId: string, carData: CarInput
 
 //delete car
 export const deleteCar = async (userId: string, carId: string) => {
-  const car = await db.car.findFirst({
-    where: { id: carId, user_id: userId },
-  })
+  const car = await getCarById(userId, carId)
 
-  if (!car) throw new Error('Car not found')
-
-  await db.car.delete({
-    where: { id: carId },
-  })
+  await db.car.delete({ where: { id: carId } })
 
   return car
 }

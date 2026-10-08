@@ -7,6 +7,7 @@ import {
   updateMeController,
 } from './auth.controller'
 import { authenticate } from '../../middleware/auth.middleware'
+import { loginLimiter } from '../../middleware/rate-limit.middleware'
 
 const router = Router()
 
@@ -14,7 +15,7 @@ const router = Router()
 router.post('/register', registerController)
 
 //login
-router.post('/login', loginController)
+router.post('/login', loginLimiter, loginController)
 
 //logout
 router.post('/logout', logoutController)

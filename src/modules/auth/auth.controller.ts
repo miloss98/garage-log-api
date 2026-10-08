@@ -1,98 +1,52 @@
 import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { registerSchema, loginSchema, updateMeSchema } from './auth.schema'
-import { register, login } from './auth.service'
+import { register, login, getMe, updateMe } from './auth.service'
 import { AuthRequest } from '../../middleware/auth.middleware'
-import { db } from '../../lib/db'
+
+const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
+
+const setAuthCookie = (res: Response, userId: string) => {
+  const token = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '7d' })
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: SEVEN_DAYS,
+  })
+}
+
+// No try/catch needed: Express 5 sends errors thrown here (including
+// ZodError from .parse()) to the error middleware in src/middleware.
 
 export const registerController = async (req: Request, res: Response) => {
-  const parsed = registerSchema.safeParse(req.body)
+  const data = registerSchema.parse(req.body)
+  const user = await register(data)
 
-  if (!parsed.success) {
-    res.status(400).json({ errors: parsed.error.flatten() })
-    return
-  }
-
-  try {
-    const user = await register(parsed.data)
-
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' })
-
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
-
-    res.status(201).json({ user })
-  } catch (error: any) {
-    res.status(400).json({ message: error.message })
-  }
+  setAuthCookie(res, user.id)
+  res.status(201).json({ user })
 }
 
 export const loginController = async (req: Request, res: Response) => {
-  const parsed = loginSchema.safeParse(req.body)
+  const data = loginSchema.parse(req.body)
+  const user = await login(data)
 
-  if (!parsed.success) {
-    res.status(400).json({ errors: parsed.error.flatten() })
-    return
-  }
-
-  try {
-    const user = await login(parsed.data)
-
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' })
-
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
-
-    res.status(200).json({ user })
-  } catch (error: any) {
-    res.status(400).json({ message: error.message })
-  }
+  setAuthCookie(res, user.id)
+  res.status(200).json({ user })
 }
 
-export const logoutController = (req: Request, res: Response) => {
-  res.clearCookie('token').status(200).json({ msg: 'Logged out successfully.' })
+export const logoutController = (_req: Request, res: Response) => {
+  res.clearCookie('token').status(200).json({ message: 'Logged out successfully.' })
 }
 
 export const meController = async (req: AuthRequest, res: Response) => {
-  const userId = req.userId
-  try {
-    const user = await db.user.findUnique({
-      where: {
-        id: userId,
-      },
-    })
-
-    if (!user) {
-      res.status(404).json({ message: 'User not found' })
-      return
-    }
-
-    const { password: _, ...userWithoutPassword } = user
-    res.status(200).json(userWithoutPassword)
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
+  const user = await getMe(req.userId!)
+  res.status(200).json(user)
 }
 
 export const updateMeController = async (req: AuthRequest, res: Response) => {
-  const parsed = updateMeSchema.safeParse(req.body)
-  if (!parsed.success) {
-    res.status(400).json({ errors: parsed.error.flatten() })
-    return
-  }
-  try {
-    const user = await db.user.update({ where: { id: req.userId }, data: parsed.data })
-    const { password: _, ...userWithoutPassword } = user
-    res.status(200).json(userWithoutPassword)
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
+  const data = updateMeSchema.parse(req.body)
+  const user = await updateMe(req.userId!, data)
+  res.status(200).json(user)
 }

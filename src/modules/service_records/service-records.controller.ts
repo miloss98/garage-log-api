@@ -10,76 +10,41 @@ import {
 import { serviceRecordSchema } from './service-records.schema'
 
 export const getServiceRecordsController = async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!
-  const carId = req.params.carId as string
-
-  try {
-    const serviceRecords = await getServiceRecords(userId, carId)
-    res.status(200).json({ serviceRecords })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
+  const serviceRecords = await getServiceRecords(req.userId!, req.params.carId as string)
+  res.status(200).json({ serviceRecords })
 }
 
 export const addServiceRecordController = async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!
-  const carId = req.params.carId as string
-  const parsed = serviceRecordSchema.safeParse(req.body)
-
-  if (!parsed.success) {
-    res.status(400).json({ errors: parsed.error.flatten() })
-    return
-  }
-
-  try {
-    const newServiceRecord = await addServiceRecord(userId, carId, parsed.data)
-    res.status(201).json({ newServiceRecord })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
+  const data = serviceRecordSchema.parse(req.body)
+  const newServiceRecord = await addServiceRecord(req.userId!, req.params.carId as string, data)
+  res.status(201).json({ newServiceRecord })
 }
 
 export const getServiceRecordByIdController = async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!
-  const carId = req.params.carId as string
-  const serviceId = req.params.serviceId as string
-
-  try {
-    const serviceRecord = await getServiceRecordById(userId, carId, serviceId)
-    res.status(200).json({ serviceRecord })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
+  const serviceRecord = await getServiceRecordById(
+    req.userId!,
+    req.params.carId as string,
+    req.params.serviceId as string,
+  )
+  res.status(200).json({ serviceRecord })
 }
 
 export const updateServiceRecordController = async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!
-  const carId = req.params.carId as string
-  const serviceId = req.params.serviceId as string
-  const parsed = serviceRecordSchema.safeParse(req.body)
-
-  if (!parsed.success) {
-    res.status(400).json({ errors: parsed.error.flatten() })
-    return
-  }
-
-  try {
-    const updatedServiceRecord = await updateServiceRecord(userId, carId, serviceId, parsed.data)
-    res.status(200).json({ updatedServiceRecord })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
+  const data = serviceRecordSchema.parse(req.body)
+  const updatedServiceRecord = await updateServiceRecord(
+    req.userId!,
+    req.params.carId as string,
+    req.params.serviceId as string,
+    data,
+  )
+  res.status(200).json({ updatedServiceRecord })
 }
 
 export const deleteServiceRecordController = async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!
-  const carId = req.params.carId as string
-  const serviceId = req.params.serviceId as string
-
-  try {
-    const deletedServiceRecord = await deleteServiceRecord(userId, carId, serviceId)
-    res.status(200).json({ deletedServiceRecord })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
+  const deletedServiceRecord = await deleteServiceRecord(
+    req.userId!,
+    req.params.carId as string,
+    req.params.serviceId as string,
+  )
+  res.status(200).json({ deletedServiceRecord })
 }

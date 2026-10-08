@@ -1,15 +1,20 @@
 import bcrypt from 'bcryptjs'
 import { db } from '../../lib/db'
-import { LoginInput, RegisterInput } from './auth.schema'
+import { HttpError, notFound } from '../../lib/http-error'
+import { LoginInput, RegisterInput, UpdateMeInput } from './auth.schema'
+
+// Never send the password hash to the client
+const withoutPassword = <T extends { password: string }>(user: T) => {
+  const { password: _, ...rest } = user
+  return rest
+}
 
 export const register = async (data: RegisterInput) => {
   const existingUser = await db.user.findUnique({
     where: { email: data.email },
   })
 
-  if (existingUser) {
-    throw new Error('Email already in use')
-  }
+  if (existingUser) throw new HttpError(409, 'Email already in use')
 
   const hashedPassword = await bcrypt.hash(data.password, 10)
 
@@ -21,8 +26,7 @@ export const register = async (data: RegisterInput) => {
     },
   })
 
-  const { password: _, ...userWithoutPassword } = user
-  return userWithoutPassword
+  return withoutPassword(user)
 }
 
 export const login = async (data: LoginInput) => {
@@ -30,16 +34,24 @@ export const login = async (data: LoginInput) => {
     where: { email: data.email },
   })
 
-  if (!user) {
-    throw new Error('Invalid credentials')
-  }
+  // Same message for "no such user" and "wrong password",
+  // so attackers can't find out which emails are registered
+  if (!user) throw new HttpError(401, 'Invalid credentials')
 
   const isPasswordValid = await bcrypt.compare(data.password, user.password)
+  if (!isPasswordValid) throw new HttpError(401, 'Invalid credentials')
 
-  if (!isPasswordValid) {
-    throw new Error('Invalid credentials')
-  }
+  return withoutPassword(user)
+}
 
-  const { password: _, ...userWithoutPassword } = user
-  return userWithoutPassword
+export const getMe = async (userId: string) => {
+  const user = await db.user.findUnique({ where: { id: userId } })
+  if (!user) throw notFound('User')
+
+  return withoutPassword(user)
+}
+
+export const updateMe = async (userId: string, data: UpdateMeInput) => {
+  const user = await db.user.update({ where: { id: userId }, data })
+  return withoutPassword(user)
 }

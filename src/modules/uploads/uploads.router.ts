@@ -10,14 +10,7 @@ const upload = multer({
 
 const router = Router()
 
-router.post(
-  '/',
-  (req, res, next) =>
-    upload.single('image')(req, res, (err) => {
-      if (err) return res.status(400).json({ message: err.message })
-      next()
-    }),
-  uploadImageController,
-)
+// Multer errors (e.g. file too large) are turned into a 400 by the error middleware
+router.post('/', upload.single('image'), uploadImageController)
 
 export default router
