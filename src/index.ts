@@ -10,6 +10,7 @@ import uploadsRouter from './modules/uploads/uploads.router'
 import carsRouter from './modules/cars/cars.router'
 import serviceRecordsRouter from './modules/service_records/service-records.router'
 import statsRouter from './modules/stats/stats.router'
+import docsRouter from './docs/docs.router'
 import { authenticate, blockDemo } from './middleware/auth.middleware'
 import { errorHandler, notFoundHandler } from './middleware/error.middleware'
 
@@ -29,6 +30,9 @@ app.use(cookieParser())
 app.get('/api/health', (_req, res) => {
   res.status(200).json({ status: 'ok' })
 })
+
+// Interactive API documentation (Swagger UI) + the raw OpenAPI spec
+app.use('/api/docs', docsRouter)
 
 app.use('/api/auth', authRouter)
 // Demo accounts can't upload photos: they're deleted after 24h, and their
